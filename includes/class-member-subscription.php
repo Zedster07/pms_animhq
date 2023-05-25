@@ -108,6 +108,27 @@ Class PMS_Member_Subscription {
 		return $stmt->rowCount();
 	}
 
+	public function getPlan($plan_name) {
+		global $wpdb;
+		$db_name = $wpdb->dbname;
+		$db_user = $wpdb->dbuser;
+		$db_password = $wpdb->dbpassword;
+		$db_host = $wpdb->dbhost;
+
+		try {
+			$pdo = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_password);
+			$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		} catch (PDOException $e) {
+			die("Database connection failed: " . $e->getMessage());
+		}
+
+		$query = "SELECT * FROM ahq_plans where plan_name = :plan_name";
+		$stmt = $pdo->prepare($query);
+		$stmt->bindParam(':plan_name', $plan_name, PDO::PARAM_STR);
+		$stmt->execute();
+		return $stmt->rowCount() > 0 ? $stmt->fetch(PDO::FETCH_OBJ) : null; 
+	}
+
 	/**
 	 * Inserts a new member subscription into the database
 	 *
@@ -137,20 +158,12 @@ Class PMS_Member_Subscription {
 		$planId = $data['subscription_plan_id'];
 		$plan = pms_get_subscription_plan($planId);
 		$user_id = $data['user_id'];
-		$screens = 0;
-		if($plan->name == "Senpai"){
-			$screens = 1;
-		} else if($plan->name == "Sensei") {
-			$screens = 2;
-		} else if ($plan->name == "Sama") {
-			$screens = 4;
-		}
-
 		$current_user = wp_get_current_user();
+		$screens= $this->getPlan($plan->name)->screens;
 
+		
 		if ( $current_user instanceof WP_User ) {
 			if($this->checkUserScreens($current_user , $planId) == 0) {
-
 				$query = "INSERT INTO screens (user_id , username , screens , subscriptionId) VALUES (:user_id , :username , :screens , :subId)";
 				$stmt = $pdo->prepare($query);
 				$stmt->bindParam(':user_id', $current_user->ID, PDO::PARAM_INT);
@@ -210,6 +223,8 @@ Class PMS_Member_Subscription {
 		if( isset( $data['id'] ) )
 			unset( $data['id'] );
 
+
+
 		// Update the member subscription
 		$update_result = $wpdb->update( $wpdb->prefix . 'pms_member_subscriptions', $data, array( 'id' => $this->id ) );
 
@@ -219,6 +234,30 @@ Class PMS_Member_Subscription {
 
 
 		if( $update_result ) {
+
+			global $wpdb;
+			$db_name = $wpdb->dbname;
+			$db_user = $wpdb->dbuser;
+			$db_password = $wpdb->dbpassword;
+			$db_host = $wpdb->dbhost;
+			$plan = pms_get_subscription_plan($data['subscription_plan_id']);
+			$ahqPlan = $this->getPlan($plan->name);
+			try {
+				$pdo = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_password);
+				$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			} catch (PDOException $e) {
+				die("Database connection failed: " . $e->getMessage());
+			}
+
+			$query = "UPDATE screens SET subscriptionId = :subId , screens = :screens WHERE subscriptionId=:osbid and user_id=:user_id";
+			$stmt = $pdo->prepare($query);
+			$stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+			$stmt->bindParam(':subId', $data['subscription_plan_id'], PDO::PARAM_INT);
+			$stmt->bindParam(':osbid', $this->subscription_plan_id, PDO::PARAM_INT);
+			$stmt->bindParam(':screens',$ahqPlan->screens , PDO::PARAM_INT);
+
+			$stmt->execute();
+
 
 			/**
 			 * Fires right after the Member Subscription db entry was updated
@@ -251,6 +290,8 @@ Class PMS_Member_Subscription {
 		global $wpdb;
 
 		$delete_result = $wpdb->delete( $wpdb->prefix . 'pms_member_subscriptions', array( 'id' => $this->id ) );
+		$userId = $this->user_id;
+		$sid = $this->id;
 
 		// Can return 0 if no rows are affected
         if( $delete_result !== false )
@@ -258,7 +299,25 @@ Class PMS_Member_Subscription {
 
         if( $delete_result ) {
 			
-			
+			global $wpdb;
+			$db_name = $wpdb->dbname;
+			$db_user = $wpdb->dbuser;
+			$db_password = $wpdb->dbpassword;
+			$db_host = $wpdb->dbhost;
+
+			try {
+				$pdo = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_password);
+				$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			} catch (PDOException $e) {
+				die("Database connection failed: " . $e->getMessage());
+			}
+
+			$query = "DELETE FROM screens WHERE user_id = :user_id and subscriptionId =:subId";
+			$stmt = $pdo->prepare($query);
+			$stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+			$stmt->bindParam(':subId', $sid, PDO::PARAM_INT);
+			$stmt->execute();
+
 
 			/**
 			 * Fires right after a member subscription has been deleted, but before metadata is deleted
