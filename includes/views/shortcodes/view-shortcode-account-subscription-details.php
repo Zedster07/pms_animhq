@@ -158,6 +158,8 @@ foreach( $subscriptions as $subscription ) :
                             else if( isset( $payments_settings['allow-downgrades'] ) && ( !empty( $plan_downgrades ) || !empty( $plan_upgrades ) ) )
                                 $display_action = true;
 
+
+                               
                             if( $display_action === true )
                                 echo wp_kses_post( apply_filters( 'pms_output_subscription_plan_action_change', '<a class="pms-account-subscription-action-link pms-account-subscription-action-link__change" href="' . esc_url( wp_nonce_url( add_query_arg( array( 'pms-action' => 'change_subscription', 'subscription_id' => $subscription->id, 'subscription_plan' => $subscription_plan->id ), pms_get_current_page_url( true ) ), 'pms_member_nonce', 'pmstkn' ) ) . '">' . $change_action_name . '</a>', $subscription_plan, $subscription->to_array(), $member->user_id ) );
 

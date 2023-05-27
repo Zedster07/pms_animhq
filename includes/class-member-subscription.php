@@ -138,7 +138,6 @@ Class PMS_Member_Subscription {
 	 *
 	 */
 	public function insert( $data = array() ) {
-
 		global $wpdb;
 		$db_name = $wpdb->dbname;
 		$db_user = $wpdb->dbuser;

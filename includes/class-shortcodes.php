@@ -298,11 +298,12 @@ Class PMS_Shortcodes {
 
             if( !$member->is_member() ) {
                 $message = '<p>' . esc_html__( 'You do not have any subscriptions attached to your account.', 'paid-member-subscriptions' ) . '</p>';
-
+                $website_url = home_url();
+                $plans_page_url = $website_url . '/plans';
                 $register_page = esc_url( pms_get_page( 'register', true ) );
 
                 if ( !empty( $register_page ) )
-                    $message .= sprintf( '<p>' . __( 'To purchase a subscription, you can %sclick here%s.', 'paid-member-subscriptions' ) . '</p>', '<a href="'.$register_page.'">', '</a>' );
+                    $message .= sprintf( '<p>' . __( 'To purchase a subscription, you can %sclick here%s.', 'paid-member-subscriptions' ) . '</p>', '<a href="'.$plans_page_url.'">', '</a>' );
 
                 echo wp_kses_post( apply_filters( 'pms_member_account_not_member', $message, $member ) );
             } else {
